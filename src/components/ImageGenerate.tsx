@@ -97,6 +97,7 @@ export const ImageGenerate: React.FC = () => {
               imageModels.map((model) => (
                 <option key={model.id} value={model.id}>
                   {model.name || model.id}
+                  {model.description ? ` - ${model.description.substring(0, 50)}` : ''}
                 </option>
               ))
             ) : (
