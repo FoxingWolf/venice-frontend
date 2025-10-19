@@ -156,7 +156,7 @@ export const Chat: React.FC = () => {
                 chatModels.map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.name || model.id}
-                    {model.context_length ? ` (${(model.context_length / 1000).toFixed(0)}k)` : ''}
+                    {model.availableContextTokens ? ` (${(model.availableContextTokens / 1000).toFixed(0)}k)` : ''}
                   </option>
                 ))
               ) : (
