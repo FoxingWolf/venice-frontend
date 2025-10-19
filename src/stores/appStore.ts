@@ -14,12 +14,32 @@ interface AppState {
   // Models
   models: ModelSpec[];
   selectedModel: string;
+  selectedImageModel: string;
+  selectedTTSModel: string;
+  selectedEmbeddingModel: string;
   setModels: (models: ModelSpec[]) => void;
   setSelectedModel: (model: string) => void;
+  setSelectedImageModel: (model: string) => void;
+  setSelectedTTSModel: (model: string) => void;
+  setSelectedEmbeddingModel: (model: string) => void;
+  getChatModels: () => ModelSpec[];
+  getImageModels: () => ModelSpec[];
+  getTTSModels: () => ModelSpec[];
+  getEmbeddingModels: () => ModelSpec[];
 
   // Venice Parameters
   veniceParameters: VeniceParameters;
   setVeniceParameters: (params: Partial<VeniceParameters>) => void;
+
+  // Chat Parameters
+  chatParameters: {
+    temperature: number;
+    max_tokens?: number;
+    top_p: number;
+    frequency_penalty: number;
+    presence_penalty: number;
+  };
+  setChatParameters: (params: Partial<AppState['chatParameters']>) => void;
 
   // Stats
   stats: RequestStats[];
@@ -46,7 +66,7 @@ interface AppState {
   dismissDeprecationWarning: (model: string) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   // API Key
   apiKey: '',
   setApiKey: (key) => set({ apiKey: key }),
@@ -61,8 +81,32 @@ export const useAppStore = create<AppState>((set) => ({
   // Models
   models: [],
   selectedModel: 'llama-3.3-70b',
+  selectedImageModel: 'flux-1.1-pro',
+  selectedTTSModel: 'tts-kokoro',
+  selectedEmbeddingModel: 'text-embedding-bge-m3',
   setModels: (models) => set({ models }),
   setSelectedModel: (model) => set({ selectedModel: model }),
+  setSelectedImageModel: (model) => set({ selectedImageModel: model }),
+  setSelectedTTSModel: (model) => set({ selectedTTSModel: model }),
+  setSelectedEmbeddingModel: (model) => set({ selectedEmbeddingModel: model }),
+  getChatModels: () => {
+    const state = get();
+    return state.models.filter(
+      (m: ModelSpec) => m.traits?.includes('chat') || m.traits?.includes('text')
+    );
+  },
+  getImageModels: () => {
+    const state = get();
+    return state.models.filter((m: ModelSpec) => m.traits?.includes('image'));
+  },
+  getTTSModels: () => {
+    const state = get();
+    return state.models.filter((m: ModelSpec) => m.traits?.includes('audio') || m.traits?.includes('tts'));
+  },
+  getEmbeddingModels: () => {
+    const state = get();
+    return state.models.filter((m: ModelSpec) => m.traits?.includes('embedding'));
+  },
 
   // Venice Parameters
   veniceParameters: {
@@ -72,6 +116,19 @@ export const useAppStore = create<AppState>((set) => ({
   setVeniceParameters: (params) =>
     set((state) => ({
       veniceParameters: { ...state.veniceParameters, ...params },
+    })),
+
+  // Chat Parameters
+  chatParameters: {
+    temperature: 0.7,
+    max_tokens: undefined,
+    top_p: 0.9,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+  },
+  setChatParameters: (params) =>
+    set((state) => ({
+      chatParameters: { ...state.chatParameters, ...params },
     })),
 
   // Stats

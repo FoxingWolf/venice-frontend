@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { useAppStore } from '@/stores/appStore';
 
 export const Embeddings: React.FC = () => {
-  const { provider, addStats } = useAppStore();
+  const {
+    provider,
+    addStats,
+    getEmbeddingModels,
+    selectedEmbeddingModel,
+    setSelectedEmbeddingModel,
+  } = useAppStore();
   const [text, setText] = useState('');
   const [format, setFormat] = useState<'float' | 'base64'>('float');
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +24,7 @@ export const Embeddings: React.FC = () => {
 
     try {
       const { data, headers } = await provider.createEmbeddings({
-        model: 'text-embedding-bge-m3',
+        model: selectedEmbeddingModel,
         input: text,
         encoding_format: format,
       });
@@ -27,7 +33,7 @@ export const Embeddings: React.FC = () => {
 
       addStats({
         requestId: headers?.cfRay,
-        modelId: 'text-embedding-bge-m3',
+        modelId: selectedEmbeddingModel,
         deprecationWarning: headers?.veniceModelDeprecationWarning,
         deprecationDate: headers?.veniceModelDeprecationDate,
         headers,
@@ -54,11 +60,36 @@ export const Embeddings: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const embeddingModels = getEmbeddingModels();
+
   return (
     <div className="h-full overflow-y-auto p-4">
       <h2 className="text-2xl font-bold text-white mb-4">Embeddings</h2>
 
       <div className="space-y-4 max-w-2xl">
+        {/* Model Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Model
+          </label>
+          <select
+            value={selectedEmbeddingModel}
+            onChange={(e) => setSelectedEmbeddingModel(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={!provider}
+          >
+            {embeddingModels.length > 0 ? (
+              embeddingModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name || model.id}
+                </option>
+              ))
+            ) : (
+              <option value={selectedEmbeddingModel}>{selectedEmbeddingModel}</option>
+            )}
+          </select>
+        </div>
+
         {/* Text Input */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -86,11 +117,6 @@ export const Embeddings: React.FC = () => {
             <option value="float">Float</option>
             <option value="base64">Base64</option>
           </select>
-        </div>
-
-        {/* Model Info */}
-        <div className="bg-blue-900/20 border border-blue-600 rounded p-3 text-blue-300 text-sm">
-          <strong>Model:</strong> text-embedding-bge-m3
         </div>
 
         {/* Error */}

@@ -2,18 +2,35 @@ import React, { useState } from 'react';
 import { useAppStore } from '@/stores/appStore';
 
 export const ImageGenerate: React.FC = () => {
-  const { provider, showAdvanced, addStats } = useAppStore();
+  const {
+    provider,
+    showAdvanced,
+    addStats,
+    getImageModels,
+    selectedImageModel,
+    setSelectedImageModel,
+  } = useAppStore();
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
-  const [model, setModel] = useState('qwen-image');
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [steps, setSteps] = useState(30);
   const [cfgScale, setCfgScale] = useState(7.5);
   const [seed, setSeed] = useState<number | undefined>(undefined);
+  const [stylePreset, setStylePreset] = useState<string>('');
+  const [styles, setStyles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Load image styles on mount
+  React.useEffect(() => {
+    if (provider) {
+      provider.getImageStyles().then(setStyles).catch((err) => {
+        console.error('Failed to load image styles:', err);
+      });
+    }
+  }, [provider]);
 
   const handleGenerate = async () => {
     if (!prompt.trim() || !provider || isLoading) return;
@@ -24,7 +41,7 @@ export const ImageGenerate: React.FC = () => {
 
     try {
       const { data, headers } = await provider.generateImage({
-        model,
+        model: selectedImageModel,
         prompt,
         negative_prompt: negativePrompt || undefined,
         width,
@@ -32,6 +49,7 @@ export const ImageGenerate: React.FC = () => {
         steps,
         cfg_scale: cfgScale,
         seed: seed || undefined,
+        style_preset: stylePreset || undefined,
         return_binary: false,
       });
 
@@ -43,7 +61,7 @@ export const ImageGenerate: React.FC = () => {
 
       addStats({
         requestId: headers?.cfRay,
-        modelId: model,
+        modelId: selectedImageModel,
         deprecationWarning: headers?.veniceModelDeprecationWarning,
         deprecationDate: headers?.veniceModelDeprecationDate,
         headers,
@@ -57,11 +75,36 @@ export const ImageGenerate: React.FC = () => {
     }
   };
 
+  const imageModels = getImageModels();
+
   return (
     <div className="h-full overflow-y-auto p-4">
       <h2 className="text-2xl font-bold text-white mb-4">Image Generation</h2>
 
       <div className="space-y-4 max-w-2xl">
+        {/* Model Selector */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Model
+          </label>
+          <select
+            value={selectedImageModel}
+            onChange={(e) => setSelectedImageModel(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={!provider}
+          >
+            {imageModels.length > 0 ? (
+              imageModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name || model.id}
+                  {model.description ? ` - ${model.description.substring(0, 50)}` : ''}
+                </option>
+              ))
+            ) : (
+              <option value={selectedImageModel}>{selectedImageModel}</option>
+            )}
+          </select>
+        </div>
         {/* Prompt */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -93,21 +136,28 @@ export const ImageGenerate: React.FC = () => {
         {/* Advanced Settings */}
         {showAdvanced && (
           <div className="space-y-4 border-t border-gray-700 pt-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* Style Preset */}
+            {styles.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Model
+                  Style Preset (Optional)
                 </label>
                 <select
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
+                  value={stylePreset}
+                  onChange={(e) => setStylePreset(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="qwen-image">Qwen Image</option>
-                  <option value="venice-sd35">Venice SD 3.5</option>
+                  <option value="">None</option>
+                  {styles.map((style) => (
+                    <option key={style} value={style}>
+                      {style}
+                    </option>
+                  ))}
                 </select>
               </div>
+            )}
 
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Steps

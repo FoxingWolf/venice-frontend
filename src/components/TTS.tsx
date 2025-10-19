@@ -8,7 +8,13 @@ const VOICES = [
 ];
 
 export const TTS: React.FC = () => {
-  const { provider, addStats } = useAppStore();
+  const {
+    provider,
+    addStats,
+    getTTSModels,
+    selectedTTSModel,
+    setSelectedTTSModel,
+  } = useAppStore();
   const [text, setText] = useState('');
   const [voice, setVoice] = useState('af_sky');
   const [speed, setSpeed] = useState(1.0);
@@ -27,7 +33,7 @@ export const TTS: React.FC = () => {
     try {
       const { data, headers } = await provider.generateSpeech({
         input: text,
-        model: 'tts-kokoro',
+        model: selectedTTSModel,
         voice,
         response_format: format,
         speed,
@@ -38,7 +44,7 @@ export const TTS: React.FC = () => {
 
       addStats({
         requestId: headers?.cfRay,
-        modelId: 'tts-kokoro',
+        modelId: selectedTTSModel,
         deprecationWarning: headers?.veniceModelDeprecationWarning,
         deprecationDate: headers?.veniceModelDeprecationDate,
         headers,
@@ -52,11 +58,36 @@ export const TTS: React.FC = () => {
     }
   };
 
+  const ttsModels = getTTSModels();
+
   return (
     <div className="h-full overflow-y-auto p-4">
       <h2 className="text-2xl font-bold text-white mb-4">Text-to-Speech</h2>
 
       <div className="space-y-4 max-w-2xl">
+        {/* Model Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Model
+          </label>
+          <select
+            value={selectedTTSModel}
+            onChange={(e) => setSelectedTTSModel(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={!provider}
+          >
+            {ttsModels.length > 0 ? (
+              ttsModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name || model.id}
+                </option>
+              ))
+            ) : (
+              <option value={selectedTTSModel}>{selectedTTSModel}</option>
+            )}
+          </select>
+        </div>
+
         {/* Text Input */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">

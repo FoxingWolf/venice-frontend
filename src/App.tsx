@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/appStore';
+import type { ModelSpec } from '@/types/venice';
 import { Settings } from '@/components/Settings';
 import { Chat } from '@/components/Chat';
 import { ImageGenerate } from '@/components/ImageGenerate';
@@ -40,9 +41,9 @@ function App() {
   useEffect(() => {
     // Fetch models when provider is available
     if (provider) {
-      provider.getModels().then((models) => {
+      provider.getModels().then((models: ModelSpec[]) => {
         setModels(models);
-      }).catch((error) => {
+      }).catch((error: Error) => {
         console.error('Failed to fetch models:', error);
       });
     }
