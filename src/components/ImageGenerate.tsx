@@ -42,12 +42,44 @@ export const ImageGenerate: React.FC = () => {
     }
   }, [provider]);
 
+  // Keyboard navigation for image preview modal
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedImageIndex === null) return;
+
+      if (e.key === 'Escape') {
+        setSelectedImageIndex(null);
+      } else if (e.key === 'ArrowLeft' && selectedImageIndex > 0) {
+        setSelectedImageIndex(selectedImageIndex - 1);
+      } else if (e.key === 'ArrowRight' && selectedImageIndex < generatedImages.length - 1) {
+        setSelectedImageIndex(selectedImageIndex + 1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedImageIndex, generatedImages.length]);
+
   const handleGenerate = async () => {
     if (!prompt.trim() || !provider || isLoading) return;
 
+    // Validate parameters
+    if (width < 256 || width > 2048 || height < 256 || height > 2048) {
+      setError('Width and height must be between 256 and 2048');
+      return;
+    }
+    if (steps < 1 || steps > 100) {
+      setError('Steps must be between 1 and 100');
+      return;
+    }
+    if (cfgScale < 1 || cfgScale > 20) {
+      setError('CFG Scale must be between 1 and 20');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
-    setProgress('Generating image...');
+    setProgress(numImages > 1 ? `Generating ${numImages} images...` : 'Generating image...');
 
     try {
       const { data, headers } = await provider.generateImage({
@@ -92,6 +124,10 @@ export const ImageGenerate: React.FC = () => {
         }
       }
 
+      if (newImages.length === 0) {
+        throw new Error('No images were generated');
+      }
+
       setGeneratedImages((prev) => [...newImages, ...prev]);
       setProgress('');
 
@@ -105,7 +141,11 @@ export const ImageGenerate: React.FC = () => {
       });
     } catch (err) {
       console.error('Image generation error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate image');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate image';
+      setError(errorMessage.includes('fetch') 
+        ? 'Network error: Unable to connect to Venice AI. Please check your internet connection and API key.'
+        : errorMessage
+      );
       setProgress('');
     } finally {
       setIsLoading(false);
@@ -150,10 +190,19 @@ export const ImageGenerate: React.FC = () => {
   const downloadImage = (imageUrl: string, index: number) => {
     const link = document.createElement('a');
     link.href = imageUrl;
-    link.download = `venice-generated-${Date.now()}-${index}.png`;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const seedPart = generatedImages[index]?.seed ? `-seed${generatedImages[index].seed}` : '';
+    link.download = `venice-${selectedImageModel}-${timestamp}${seedPart}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const clearAllImages = () => {
+    if (window.confirm(`Clear all ${generatedImages.length} generated images?`)) {
+      setGeneratedImages([]);
+      setSelectedImageIndex(null);
+    }
   };
 
   const imageModels = getImageModels();
@@ -164,10 +213,11 @@ export const ImageGenerate: React.FC = () => {
         <h2 className="text-2xl font-bold text-white">Image Generation</h2>
         {generatedImages.length > 0 && (
           <button
-            onClick={() => setGeneratedImages([])}
+            onClick={clearAllImages}
             className="px-3 py-1 text-sm bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
+            title="Clear all generated images"
           >
-            Clear All ({generatedImages.length})
+            🗑️ Clear All ({generatedImages.length})
           </button>
         )}
       </div>
@@ -202,26 +252,31 @@ export const ImageGenerate: React.FC = () => {
             <label className="block text-sm font-medium text-gray-300">
               Prompt
             </label>
-            {prompt && (
-              <button
-                onClick={copyPrompt}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                title="Copy prompt"
-              >
-                📋 Copy
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">{prompt.length} characters</span>
+              {prompt && (
+                <button
+                  onClick={copyPrompt}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  title="Copy prompt to clipboard"
+                >
+                  📋 Copy
+                </button>
+              )}
+            </div>
           </div>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe the image you want to generate..."
+            placeholder="Describe the image you want to generate... Be specific and detailed for best results."
             rows={4}
             disabled={isLoading}
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           />
-          <p className="text-xs text-gray-400 mt-1">Ctrl+Enter to generate</p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-gray-400">💡 Tip: Press Ctrl+Enter to generate quickly</p>
+          </div>
         </div>
 
         {/* Aspect Ratio Presets */}
@@ -445,36 +500,55 @@ export const ImageGenerate: React.FC = () => {
         {/* Generated Images Gallery */}
         {generatedImages.length > 0 && (
           <div className="mt-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Generated Images</h3>
+            <h3 className="text-lg font-semibold text-white">
+              Generated Images ({generatedImages.length})
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               {generatedImages.map((image, index) => (
                 <div
                   key={`${image.timestamp}-${index}`}
-                  className="border border-gray-700 rounded-lg overflow-hidden bg-gray-800 hover:border-blue-500 transition-colors cursor-pointer"
+                  className="border border-gray-700 rounded-lg overflow-hidden bg-gray-800 hover:border-blue-500 transition-all hover:shadow-lg cursor-pointer"
                   onClick={() => setSelectedImageIndex(index)}
                 >
-                  <div className="aspect-square bg-gray-900 flex items-center justify-center overflow-hidden">
+                  <div className="aspect-square bg-gray-900 flex items-center justify-center overflow-hidden relative group">
                     <img
                       src={image.url}
                       alt={`Generated ${index + 1}`}
                       className="w-full h-full object-contain"
                     />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
+                      <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm">
+                        👁️ View Full Size
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-2 text-xs">
-                    <div className="text-gray-400 truncate" title={image.prompt}>
-                      {image.prompt}
+                  <div className="p-3 space-y-2">
+                    <div className="text-gray-400 text-xs truncate" title={image.prompt}>
+                      📝 {image.prompt}
                     </div>
                     {image.seed && (
-                      <div className="text-gray-500">Seed: {image.seed}</div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500">Seed: {image.seed}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSeed(image.seed);
+                          }}
+                          className="text-blue-400 hover:text-blue-300 transition-colors"
+                          title="Use this seed"
+                        >
+                          ♻️ Reuse
+                        </button>
+                      </div>
                     )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         downloadImage(image.url, index);
                       }}
-                      className="mt-2 w-full px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-center"
+                      className="w-full px-2 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-center text-sm font-medium"
                     >
-                      Download
+                      ⬇️ Download
                     </button>
                   </div>
                 </div>
@@ -486,29 +560,38 @@ export const ImageGenerate: React.FC = () => {
         {/* Image Preview Modal */}
         {selectedImageIndex !== null && generatedImages[selectedImageIndex] && (
           <div
-            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
             onClick={() => setSelectedImageIndex(null)}
           >
             <div
-              className="max-w-6xl max-h-full bg-gray-800 rounded-lg overflow-hidden"
+              className="max-w-6xl max-h-full bg-gray-800 rounded-lg overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-4 border-b border-gray-700 flex items-center justify-between">
                 <div className="flex-1 mr-4">
-                  <h3 className="font-semibold text-white mb-1">Image Preview</h3>
-                  <p className="text-sm text-gray-400">{generatedImages[selectedImageIndex].prompt}</p>
-                  {generatedImages[selectedImageIndex].seed && (
-                    <p className="text-xs text-gray-500 mt-1">Seed: {generatedImages[selectedImageIndex].seed}</p>
-                  )}
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold text-white">Image Preview</h3>
+                    <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">
+                      {selectedImageIndex + 1} of {generatedImages.length}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-2">{generatedImages[selectedImageIndex].prompt}</p>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    {generatedImages[selectedImageIndex].seed && (
+                      <span>🎲 Seed: {generatedImages[selectedImageIndex].seed}</span>
+                    )}
+                    <span>📅 {new Date(generatedImages[selectedImageIndex].timestamp).toLocaleString()}</span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setSelectedImageIndex(null)}
                   className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+                  title="Close preview (Esc)"
                 >
-                  Close
+                  ✕ Close
                 </button>
               </div>
-              <div className="overflow-auto max-h-[calc(100vh-200px)]">
+              <div className="overflow-auto max-h-[calc(100vh-200px)] bg-gray-900">
                 <img
                   src={generatedImages[selectedImageIndex].url}
                   alt="Preview"
@@ -518,10 +601,22 @@ export const ImageGenerate: React.FC = () => {
               <div className="p-4 border-t border-gray-700 flex gap-2">
                 <button
                   onClick={() => downloadImage(generatedImages[selectedImageIndex].url, selectedImageIndex)}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-medium"
                 >
-                  Download
+                  ⬇️ Download Image
                 </button>
+                {generatedImages[selectedImageIndex].seed && (
+                  <button
+                    onClick={() => {
+                      setSeed(generatedImages[selectedImageIndex].seed);
+                      setSelectedImageIndex(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    title="Use this seed for next generation"
+                  >
+                    ♻️ Reuse Seed
+                  </button>
+                )}
                 {selectedImageIndex > 0 && (
                   <button
                     onClick={() => setSelectedImageIndex(selectedImageIndex - 1)}
