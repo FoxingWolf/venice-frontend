@@ -2,6 +2,27 @@ import { create } from 'zustand';
 import type { ModelSpec, RequestStats, VeniceParameters, Character } from '@/types/venice';
 import { VeniceProvider } from '@/providers/VeniceProvider';
 
+const FALLBACK_IMAGE_MODELS: ModelSpec[] = [
+  {
+    id: 'hidream',
+    type: 'image',
+    name: 'HiDream',
+    description: 'High-quality Venice native image model',
+  },
+  {
+    id: 'hidream-lite',
+    type: 'image',
+    name: 'HiDream Lite',
+    description: 'Faster variant of HiDream with lighter resources',
+  },
+  {
+    id: 'flux-1.1-pro',
+    type: 'image',
+    name: 'Flux 1.1 Pro',
+    description: 'Flux diffusion model tuned for Venice Studio',
+  },
+];
+
 interface AppState {
   // API Key
   apiKey: string;
@@ -81,7 +102,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Models
   models: [],
   selectedModel: 'llama-3.3-70b',
-  selectedImageModel: 'flux-1.1-pro',
+  selectedImageModel: 'hidream',
   selectedTTSModel: 'tts-kokoro',
   selectedEmbeddingModel: 'text-embedding-bge-m3',
   setModels: (models) => set({ models }),
@@ -97,7 +118,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   getImageModels: () => {
     const state = get();
-    return state.models.filter((m: ModelSpec) => m.type === 'image' || m.traits?.includes('image'));
+    const dynamicImageModels = state.models.filter(
+      (m: ModelSpec) => m.type === 'image' || m.traits?.includes('image')
+    );
+
+    const fallbackModels = FALLBACK_IMAGE_MODELS.filter(
+      (fallback) => !dynamicImageModels.some((model) => model.id === fallback.id)
+    );
+
+    return [...dynamicImageModels, ...fallbackModels];
   },
   getTTSModels: () => {
     const state = get();

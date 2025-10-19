@@ -136,6 +136,8 @@ export interface ImageGenerateRequest {
   seed?: number;
   style_preset?: string;
   return_binary?: boolean;
+  // Number of image variants to generate. The API docs call this `variants` in some places.
+  variants?: number;
 }
 
 export interface ImageUpscaleRequest {

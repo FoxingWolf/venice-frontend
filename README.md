@@ -8,12 +8,20 @@ Venice Studio provides a comprehensive interface to all Venice AI capabilities:
 
 ### Core Features
 - **Chat Interface**: Stream-based chat with full Venice API support
-- **Image Generation**: Text-to-image with advanced controls (CFG scale, steps, negative prompts)
+- **Image Generation**: Advanced text-to-image generation with:
+  - Multiple image generation (1-4 images per request)
+  - Aspect ratio presets (Square, Portrait, Landscape, Widescreen)
+  - Interactive image gallery with thumbnails
+  - Full-screen preview modal with navigation
+  - Seed control and random generation
+  - Advanced parameters (CFG scale, steps, negative prompts)
+  - Professional download filenames
+  - Reuse seed functionality
 - **Image Upscale**: Enhance and upscale images (Coming Soon)
 - **Image Edit**: Edit and inpaint images (Coming Soon)
-- **Text-to-Speech**: Generate audio from text (Coming Soon)
-- **Embeddings**: Create text embeddings (Coming Soon)
-- **Characters**: Chat with AI characters (Coming Soon)
+- **Text-to-Speech**: Generate audio from text
+- **Embeddings**: Create text embeddings
+- **Characters**: Chat with AI characters
 
 ### Venice-Specific Features
 - **Venice Parameters**: Full support for `enable_web_search`, `enable_web_citations`, `enable_web_scraping`, `character_slug`, and more
@@ -105,16 +113,41 @@ npm run preview
 
 ### Image Generation
 
+**Quick Start:**
 1. Enter a detailed prompt describing your desired image
-2. (Optional) Add negative prompts to exclude unwanted elements
-3. Configure advanced settings:
-   - Model selection (Qwen Image, Venice SD 3.5)
-   - Image dimensions (width/height)
-   - Steps (quality vs speed tradeoff)
-   - CFG Scale (prompt adherence)
-   - Seed (for reproducibility)
-4. Click "Generate Image"
-5. Download the generated image
+2. Click "Generate Image" or press `Ctrl+Enter`
+3. View generated images in the gallery below
+
+**Advanced Features:**
+- **Aspect Ratio Presets**: One-click buttons for Square (1024×1024), Portrait (768×1344), Landscape (1344×768), Widescreen (1536×640)
+- **Multiple Images**: Generate 1-4 variations in a single request
+- **Image Gallery**: Thumbnail grid with hover previews
+- **Full-Screen Preview**: Click any image to view full-size with navigation
+- **Seed Control**: Random seed generator (🎲) or enter specific seed for reproducible results
+- **Reuse Seed**: Click ♻️ on any image to reuse its seed
+- **Copy Prompt**: Click 📋 to copy prompt to clipboard
+- **Character Counter**: Real-time prompt length tracking
+
+**Advanced Settings:**
+- Model selection (flux-1.1-pro, stable-diffusion, etc.)
+- Image dimensions (width/height, 256-2048)
+- Steps (1-100, quality vs speed tradeoff)
+- CFG Scale (1-20, prompt adherence)
+- Negative prompts (exclude unwanted elements)
+- Style presets (when available)
+
+**Gallery Features:**
+- Click thumbnail to open full-screen modal
+- Navigate with arrow keys or buttons
+- Download with descriptive filenames (includes model, timestamp, seed)
+- Clear all images with confirmation
+
+**Keyboard Shortcuts:**
+- `Ctrl+Enter`: Generate image
+- `Escape`: Close preview modal
+- `←` / `→`: Navigate between images in modal
+
+**See [IMAGE_GENERATION_GUIDE.md](IMAGE_GENERATION_GUIDE.md) for detailed documentation.**
 
 ### Venice Parameters
 

@@ -173,7 +173,7 @@ export class VeniceProvider {
     return response.json();
   }
 
-  async generateImage(request: ImageGenerateRequest): Promise<{ data: { url?: string; b64_json?: string }; headers: VeniceHeaders }> {
+  async generateImage(request: ImageGenerateRequest): Promise<{ data: { url?: string; b64_json?: string; images?: Array<{ url?: string; b64_json?: string; seed?: number }> }; headers: VeniceHeaders }> {
     const response = await fetch(`${VENICE_BASE_URL}/image/generate`, {
       method: 'POST',
       headers: {
