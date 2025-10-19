@@ -133,8 +133,9 @@ export const ImageGenerate: React.FC = () => {
       };
 
       // Handle multiple image responses or single payloads uniformly
-      if (data && typeof data === 'object' && 'images' in data && Array.isArray((data as { images: unknown }).images)) {
-        (data as { images: unknown[] }).images.forEach((img) => {
+      const imageArray = (data as { images?: unknown }).images;
+      if (Array.isArray(imageArray)) {
+        imageArray.forEach((img) => {
           const parsed = parseImageValue(img, seed);
           if (parsed) {
             newImages.push(parsed);
