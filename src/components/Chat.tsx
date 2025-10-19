@@ -3,7 +3,18 @@ import { useAppStore } from '@/stores/appStore';
 import type { ChatMessage } from '@/types/venice';
 
 export const Chat: React.FC = () => {
-  const { provider, selectedModel, veniceParameters, addStats, selectedCharacter } = useAppStore();
+  const {
+    provider,
+    selectedModel,
+    setSelectedModel,
+    getChatModels,
+    veniceParameters,
+    chatParameters,
+    setChatParameters,
+    showAdvanced,
+    addStats,
+    selectedCharacter,
+  } = useAppStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +73,11 @@ export const Chat: React.FC = () => {
         venice_parameters: params,
         stream: true,
         stream_options: { include_usage: true },
+        temperature: chatParameters.temperature,
+        max_tokens: chatParameters.max_tokens,
+        top_p: chatParameters.top_p,
+        frequency_penalty: chatParameters.frequency_penalty,
+        presence_penalty: chatParameters.presence_penalty,
       })) {
         totalContent += chunk;
         setMessages((prev) => {
@@ -115,8 +131,97 @@ export const Chat: React.FC = () => {
     }
   };
 
+  const clearConversation = () => {
+    setMessages([]);
+  };
+
+  const chatModels = getChatModels();
+
   return (
     <div className="flex flex-col h-full">
+      {/* Header with Model Selector */}
+      <div className="border-b border-gray-700 p-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-medium text-gray-400 mb-1">
+              Model
+            </label>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={!provider}
+            >
+              {chatModels.length > 0 ? (
+                chatModels.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name || model.id}
+                  </option>
+                ))
+              ) : (
+                <option value={selectedModel}>{selectedModel}</option>
+              )}
+            </select>
+          </div>
+
+          {showAdvanced && (
+            <>
+              <div className="w-32">
+                <label className="block text-xs font-medium text-gray-400 mb-1">
+                  Temperature
+                </label>
+                <input
+                  type="number"
+                  value={chatParameters.temperature}
+                  onChange={(e) => setChatParameters({ temperature: parseFloat(e.target.value) })}
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  className="w-full px-2 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="w-32">
+                <label className="block text-xs font-medium text-gray-400 mb-1">
+                  Max Tokens
+                </label>
+                <input
+                  type="number"
+                  value={chatParameters.max_tokens || ''}
+                  onChange={(e) => setChatParameters({ max_tokens: e.target.value ? parseInt(e.target.value) : undefined })}
+                  placeholder="Auto"
+                  className="w-full px-2 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="w-28">
+                <label className="block text-xs font-medium text-gray-400 mb-1">
+                  Top P
+                </label>
+                <input
+                  type="number"
+                  value={chatParameters.top_p}
+                  onChange={(e) => setChatParameters({ top_p: parseFloat(e.target.value) })}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  className="w-full px-2 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="ml-auto">
+            <button
+              onClick={clearConversation}
+              disabled={messages.length === 0}
+              className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
