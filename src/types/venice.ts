@@ -136,6 +136,7 @@ export interface ImageGenerateRequest {
   seed?: number;
   style_preset?: string;
   return_binary?: boolean;
+  n?: number;
 }
 
 export interface ImageUpscaleRequest {
