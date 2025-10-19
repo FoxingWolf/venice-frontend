@@ -129,7 +129,20 @@ export class VeniceProvider {
     }
 
     const data = await response.json();
-    return data.data || [];
+    const models = data.data || [];
+    
+    // Normalize the model data structure by flattening model_spec into the top level
+    return models.map((model: ModelSpec) => {
+      const normalized: ModelSpec = {
+        ...model,
+        name: model.model_spec?.name || model.name || model.id,
+        availableContextTokens: model.model_spec?.availableContextTokens || model.availableContextTokens,
+        capabilities: model.model_spec?.capabilities || model.capabilities,
+        constraints: model.model_spec?.constraints || model.constraints,
+        traits: model.model_spec?.traits || model.traits,
+      };
+      return normalized;
+    });
   }
 
   async getModelTraits(): Promise<Record<string, string[]>> {

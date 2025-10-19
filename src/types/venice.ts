@@ -13,7 +13,8 @@ export interface VeniceParameters {
 
 export interface ModelSpec {
   id: string;
-  name: string;
+  type?: 'text' | 'image' | 'audio' | 'embedding' | 'upscaler';
+  name?: string;
   description?: string;
   context_length?: number;
   availableContextTokens?: number;
@@ -23,14 +24,51 @@ export interface ModelSpec {
     supportsWebSearch?: boolean;
     supportsResponseSchema?: boolean;
     supportsLogProbs?: boolean;
+    supportsReasoning?: boolean;
+    optimizedForCode?: boolean;
+    quantization?: string;
   };
   constraints?: {
     maxWidth?: number;
     maxHeight?: number;
     maxScale?: number;
+    temperature?: {
+      default?: number;
+    };
+    top_p?: {
+      default?: number;
+    };
   };
   traits?: string[];
   compatibility?: string[];
+  model_spec?: {
+    name?: string;
+    availableContextTokens?: number;
+    capabilities?: {
+      supportsFunctionCalling?: boolean;
+      supportsVision?: boolean;
+      supportsWebSearch?: boolean;
+      supportsResponseSchema?: boolean;
+      supportsLogProbs?: boolean;
+      supportsReasoning?: boolean;
+      optimizedForCode?: boolean;
+      quantization?: string;
+    };
+    constraints?: {
+      temperature?: { default?: number };
+      top_p?: { default?: number };
+    };
+    traits?: string[];
+    pricing?: {
+      input?: { usd?: number; diem?: number };
+      output?: { usd?: number; diem?: number };
+    };
+    modelSource?: string;
+    offline?: boolean;
+  };
+  created?: number;
+  owned_by?: string;
+  object?: string;
 }
 
 export interface ChatMessage {

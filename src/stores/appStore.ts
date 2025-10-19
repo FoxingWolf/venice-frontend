@@ -92,20 +92,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   getChatModels: () => {
     const state = get();
     return state.models.filter(
-      (m: ModelSpec) => m.traits?.includes('chat') || m.traits?.includes('text')
+      (m: ModelSpec) => m.type === 'text' || m.traits?.includes('chat') || m.traits?.includes('text')
     );
   },
   getImageModels: () => {
     const state = get();
-    return state.models.filter((m: ModelSpec) => m.traits?.includes('image'));
+    return state.models.filter((m: ModelSpec) => m.type === 'image' || m.traits?.includes('image'));
   },
   getTTSModels: () => {
     const state = get();
-    return state.models.filter((m: ModelSpec) => m.traits?.includes('audio') || m.traits?.includes('tts'));
+    return state.models.filter((m: ModelSpec) => m.type === 'audio' || m.traits?.includes('audio') || m.traits?.includes('tts'));
   },
   getEmbeddingModels: () => {
     const state = get();
-    return state.models.filter((m: ModelSpec) => m.traits?.includes('embedding'));
+    return state.models.filter((m: ModelSpec) => m.type === 'embedding' || m.traits?.includes('embedding'));
   },
 
   // Venice Parameters
