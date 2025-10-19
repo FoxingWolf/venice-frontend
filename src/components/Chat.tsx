@@ -208,6 +208,36 @@ export const Chat: React.FC = () => {
                   className="w-full px-2 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              <div className="w-32">
+                <label className="block text-xs font-medium text-gray-400 mb-1">
+                  Freq Penalty
+                </label>
+                <input
+                  type="number"
+                  value={chatParameters.frequency_penalty}
+                  onChange={(e) => setChatParameters({ frequency_penalty: parseFloat(e.target.value) })}
+                  min={-2}
+                  max={2}
+                  step={0.1}
+                  className="w-full px-2 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="w-32">
+                <label className="block text-xs font-medium text-gray-400 mb-1">
+                  Pres Penalty
+                </label>
+                <input
+                  type="number"
+                  value={chatParameters.presence_penalty}
+                  onChange={(e) => setChatParameters({ presence_penalty: parseFloat(e.target.value) })}
+                  min={-2}
+                  max={2}
+                  step={0.1}
+                  className="w-full px-2 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </>
           )}
 
