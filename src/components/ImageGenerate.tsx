@@ -93,34 +93,57 @@ export const ImageGenerate: React.FC = () => {
         seed: seed || undefined,
         style_preset: stylePreset || undefined,
         return_binary: false,
-        n: numImages,
+        variants: numImages,
       });
 
       const newImages: GeneratedImage[] = [];
-      
-      // Handle multiple images response
-      if (data.images && Array.isArray(data.images)) {
-        data.images.forEach((img) => {
-          const imageUrl = img.url || (img.b64_json ? `data:image/png;base64,${img.b64_json}` : null);
-          if (imageUrl) {
-            newImages.push({
-              url: imageUrl,
-              seed: img.seed,
-              prompt,
-              timestamp: Date.now(),
-            });
+
+      const buildImage = (url: string, resolvedSeed?: number): GeneratedImage => ({
+        url,
+        seed: typeof resolvedSeed === 'number' ? resolvedSeed : undefined,
+        prompt,
+        timestamp: Date.now(),
+      });
+
+      const parseImageValue = (value: unknown, fallbackSeed?: number): GeneratedImage | null => {
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          if (!trimmed) return null;
+          if (trimmed.startsWith('http') || trimmed.startsWith('data:image')) {
+            return buildImage(trimmed, fallbackSeed);
+          }
+          return buildImage(`data:image/png;base64,${trimmed}`, fallbackSeed);
+        }
+
+        if (value && typeof value === 'object') {
+          const record = value as Record<string, unknown>;
+          const directUrl = typeof record.url === 'string' ? record.url : undefined;
+          const base64 = typeof record.b64_json === 'string' ? record.b64_json : undefined;
+          const resolvedSeed = typeof record.seed === 'number' ? record.seed : fallbackSeed;
+
+          if (directUrl) {
+            return buildImage(directUrl, resolvedSeed);
+          }
+          if (base64) {
+            return buildImage(`data:image/png;base64,${base64}`, resolvedSeed);
+          }
+        }
+
+        return null;
+      };
+
+      // Handle multiple image responses or single payloads uniformly
+      if (data && typeof data === 'object' && 'images' in data && Array.isArray((data as { images: unknown }).images)) {
+        (data as { images: unknown[] }).images.forEach((img) => {
+          const parsed = parseImageValue(img, seed);
+          if (parsed) {
+            newImages.push(parsed);
           }
         });
       } else {
-        // Handle single image response
-        const imageUrl = data.url || (data.b64_json ? `data:image/png;base64,${data.b64_json}` : null);
-        if (imageUrl) {
-          newImages.push({
-            url: imageUrl,
-            seed: seed,
-            prompt,
-            timestamp: Date.now(),
-          });
+        const parsed = parseImageValue(data, seed);
+        if (parsed) {
+          newImages.push(parsed);
         }
       }
 
@@ -206,6 +229,14 @@ export const ImageGenerate: React.FC = () => {
   };
 
   const imageModels = getImageModels();
+
+  React.useEffect(() => {
+    if (!provider || imageModels.length === 0) return;
+    const hasSelection = imageModels.some((model) => model.id === selectedImageModel);
+    if (!hasSelection) {
+      setSelectedImageModel(imageModels[0].id);
+    }
+  }, [provider, imageModels, selectedImageModel, setSelectedImageModel]);
 
   return (
     <div className="h-full overflow-y-auto p-4">
