@@ -29,7 +29,12 @@ export const Settings: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setMessage('');
 
     try {
-      // Save to localStorage
+      // Note: API key is stored in localStorage for browser-based operation.
+      // For a production desktop app, use OS-level secure storage (e.g., Tauri's keychain).
+      // This is acceptable for a local web app as:
+      // 1. Data never leaves the user's device
+      // 2. localStorage is origin-isolated
+      // 3. Keys are only sent to Venice AI over HTTPS
       localStorage.setItem('venice_api_key', localKey);
       
       // Initialize provider
